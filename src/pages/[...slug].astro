@@ -1,0 +1,60 @@
+---
+import { useStoryblokApi } from "@storyblok/astro";
+import StoryblokComponent from "@storyblok/astro/StoryblokComponent.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+export async function getStaticPaths() {
+  let languages = ["en", "ja"];
+  const storyblokApi = useStoryblokApi();
+  const { data } = await storyblokApi.get("cdn/links", {
+    version: "draft",
+  });
+
+  let links = data.links;
+  links = Object.values(links);
+
+  let paths = [];
+  links.forEach((link: { slug: string }) => {
+    languages.forEach((language) => {
+      //Define slug to use for fetching data
+      let slug = link.slug === "home" ? undefined : link.slug;
+      //Define full_url to use for generating all the urls for Astro
+      let full_url = language === "en" ? slug : `${language}/${slug ?? ""}`;
+
+      //Create a logic to change the url for diffrent versions
+      //And store all the language urls
+      let langSwitch = {};
+      languages.forEach((lang) => {
+        langSwitch = {
+          ...langSwitch,
+          [lang]: lang === "en" ? `/${slug ?? ""}` : `/${lang}/${slug ?? ""}`,
+        };
+      });
+      paths.push({
+        props: { language, slug, langSwitch },
+        params: { slug: full_url },
+      });
+    });
+  });
+  return paths;
+}
+
+// Fetch correct data for each page
+const { slug, language, langSwitch } = Astro.props;
+
+const storyblokApi = useStoryblokApi();
+const { data } = await storyblokApi.get(
+  `cdn/stories/${slug === undefined ? "home" : slug}`,
+  {
+    version: "draft",
+    resolve_relations: ["popular-articles.articles"],
+    language,
+  },
+);
+
+const story = data.story;
+---
+
+<BaseLayout langSwitch={langSwitch} language={language}>
+  <StoryblokComponent language={language} blok={story.content} />
+</BaseLayout>
