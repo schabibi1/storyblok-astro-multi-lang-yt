@@ -1,13 +1,12 @@
 ---
 import { storyblokEditable, useStoryblokApi } from "@storyblok/astro";
 import ArticleCard from "../components/ArticleCard.astro";
-
+import isPreview from "../utils/isPreview";
 const { blok, language } = Astro.props;
-
 const storyblokApi = useStoryblokApi();
 // 1️⃣ Request multiple stories
 const { data } = await storyblokApi.get(`cdn/stories`, {
-  version: "draft",
+  version: isPreview() ? "draft" : "published",
   starts_with: "blog/", // 2️⃣ Tell API to deliver stories in Blog folder
   is_startpage: false, // 3️⃣ Exclude Blog Home story
   language,
